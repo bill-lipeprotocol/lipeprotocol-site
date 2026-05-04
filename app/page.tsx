@@ -1020,13 +1020,17 @@ function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
         body: JSON.stringify(payload),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error("Unable to send inquiry.");
+        console.error("Contact form error:", result);
+        throw new Error(result.error || "Unable to send inquiry.");
       }
 
       setStatus("success");
       form.reset();
-    } catch {
+    } catch (error) {
+      console.error(error);
       setStatus("error");
     }
   }

@@ -21,7 +21,6 @@ export async function POST(request: Request) {
     }
 
     const resend = new Resend(apiKey);
-
     const body = await request.json();
 
     const name = String(body.name || "").trim();
