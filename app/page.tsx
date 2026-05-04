@@ -992,7 +992,44 @@ function CTA({ title, body, button, onClick }: CTAProps) {
 }
 
 function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
+
   if (!isOpen) return null;
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus("submitting");
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    const payload = {
+      name: String(formData.get("name") || ""),
+      email: String(formData.get("email") || ""),
+      message: String(formData.get("message") || ""),
+    };
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to send inquiry.");
+      }
+
+      setStatus("success");
+      form.reset();
+    } catch {
+      setStatus("error");
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
@@ -1004,13 +1041,15 @@ function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
             </div>
             <h2 className="mt-2 font-serif text-3xl">Request a Briefing</h2>
             <p className="mt-2 text-sm leading-6 text-white/60">
-              This is an active front-end form. Connect it to Formspree,
-              Netlify Forms, Firebase, Supabase, or your own API endpoint when
-              publishing.
+              Send a short note about the problem, stakes, and constraints.
             </p>
           </div>
+
           <button
-            onClick={onClose}
+            onClick={() => {
+              setStatus("idle");
+              onClose();
+            }}
             className="rounded-full border border-white/10 px-3 py-1 text-white/60 hover:text-white"
             type="button"
             aria-label="Close inquiry modal"
@@ -1019,36 +1058,48 @@ function InquiryModal({ isOpen, onClose }: InquiryModalProps) {
           </button>
         </div>
 
-        <form
-          className="mt-6 space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            alert(
-              "Form ready. Connect this submit handler to your backend or form service.",
-            );
-          }}
-        >
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <input
+            name="name"
             className="w-full rounded-2xl border border-white/10 bg-white/[.04] px-4 py-3 text-white outline-none focus:border-[#c9a227]/60"
             placeholder="Name"
             required
           />
+
           <input
+            name="email"
             className="w-full rounded-2xl border border-white/10 bg-white/[.04] px-4 py-3 text-white outline-none focus:border-[#c9a227]/60"
             type="email"
             placeholder="Email"
             required
           />
+
           <textarea
+            name="message"
             className="min-h-32 w-full rounded-2xl border border-white/10 bg-white/[.04] px-4 py-3 text-white outline-none focus:border-[#c9a227]/60"
             placeholder="What problem are you trying to clarify?"
+            required
           />
+
           <button
-            className="w-full rounded-2xl bg-[#c9a227] px-5 py-3 font-semibold text-black"
+            className="w-full rounded-2xl bg-[#c9a227] px-5 py-3 font-semibold text-black disabled:cursor-not-allowed disabled:opacity-60"
             type="submit"
+            disabled={status === "submitting"}
           >
-            Submit Inquiry
+            {status === "submitting" ? "Sending..." : "Submit Inquiry"}
           </button>
+
+          {status === "success" && (
+            <p className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-300">
+              Your inquiry was sent. Thank you.
+            </p>
+          )}
+
+          {status === "error" && (
+            <p className="rounded-2xl border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-300">
+              Something went wrong. Please email bill@lipeprotocol.com directly.
+            </p>
+          )}
         </form>
       </div>
     </div>
